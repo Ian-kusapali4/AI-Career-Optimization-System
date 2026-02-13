@@ -1,25 +1,36 @@
 import requests
 import urllib.parse
-# from agents.Career_architect import main # Keeping your original import structure
+import re
 
-def fetch_jobs(query):
+
+def fetch_jobs(query, limit=20):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
     }
     
-    # 1. Define your sources and how to map their data
+   
     sources = [
         {
             "name": "Jobicy",
             "url": f"https://jobicy.com/api/v2/remote-jobs?tag={query}",
             "root": "jobs",           
-            "map": {"title": "jobTitle", "desc": "jobDescription"}
+            "map": {
+                "title": "jobTitle", 
+                "desc": "jobDescription",
+                "company": "companyName",
+                "url": "url"
+            }
         },
         {
             "name": "Arbeitnow",
             "url": f"https://www.arbeitnow.com/api/job-board-api?search={query}",
             "root": "data",           
-            "map": {"title": "title", "desc": "description"}
+            "map": {
+                "title": "title", 
+                "desc": "description",
+                "company": "company_name", # Arbeitnow specific key
+                "url": "url"
+            }
         }
     ]
 
@@ -32,19 +43,24 @@ def fetch_jobs(query):
             response.raise_for_status()
             data = response.json()
             
-            # Get the list of jobs based on the 'root' key
             raw_jobs = data.get(source['root'], [])
             
-            for item in raw_jobs:
-                # Map the site-specific keys to our universal format
+            
+            for item in raw_jobs[:limit]:
+               
+                raw_desc = item.get(source['map']['desc'], "")
+                clean_desc = re.sub(r'<[^>]*>', '', raw_desc) 
+                
                 job_object = {
                     "title": item.get(source['map']['title']),
-                    "description": item.get(source['map']['desc']),
-                    "source": source['name'] # Good for tracking where it came from
+                    "company": item.get(source['map']['company'], "N/A"),
+                    "url": item.get(source['map']['url']),
+                    "description": clean_desc.strip(),
+                    "source": source['name']
                 }
                 all_jobs.append(job_object)
             
-            print(f"  > Found {len(raw_jobs)} jobs from {source['name']}")
+            print(f"  > Collected {len(all_jobs)} jobs (limited to {limit}) from {source['name']}")
 
         except Exception as err:
             print(f"  ! Error fetching from {source['name']}: {err}")
@@ -52,14 +68,13 @@ def fetch_jobs(query):
     return all_jobs
 
 if __name__ == "__main__":
-    # For testing, you can use a list or your main() import
-    # search_tags = main() 
+   
     search_tags = ["python developer"] 
     
     total_found = 0
 
     for tag in search_tags:
-        # We use quote here, but individual URLs handle the query differently
+
         formatted_query = urllib.parse.quote(tag)
         found_jobs = fetch_jobs(formatted_query)
         total_found += len(found_jobs)

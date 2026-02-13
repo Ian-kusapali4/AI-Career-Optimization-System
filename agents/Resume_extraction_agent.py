@@ -7,8 +7,7 @@ from services.parser.yaml_parser import yaml_extraction
 
 #Resume extraction agent, takes resume data and extracts the relevant fields
 
-file_path = r'.\resumes\CASEY J.pdf'
-text = pdf_reader(file_path)
+
 
 config_data = yaml_extraction('auditor.yaml')
 config = yaml_extraction('config.yaml')
@@ -37,8 +36,7 @@ def Resume_extaction( prompt_template, resume_text, notes):
     })
     return response 
 
-def resume_data():
+def resume_data(text_input):
     notes = ""
-    result = Resume_extaction( prompt_template, text, notes)
+    result = Resume_extaction( prompt_template, text_input, notes)
     return result
-print(resume_data())
