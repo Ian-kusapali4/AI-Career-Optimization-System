@@ -1,9 +1,11 @@
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from services.parser.pdf_resume_reader import pdf_reader
-from agents.json_schema.json_schema import CandidateProfile
+from agents.json_schema.resume_extraction_schema import CandidateProfile
 from langchain_core.output_parsers import PydanticOutputParser
 from services.parser.yaml_parser import yaml_extraction
+
+#Resume extraction agent, takes resume data and extracts the relevant fields
 
 file_path = r'.\resumes\CASEY J.pdf'
 text = pdf_reader(file_path)
@@ -22,7 +24,7 @@ full_template = f"{config_data['system_message']}\n\n{config_data['user_template
 prompt_template = ChatPromptTemplate.from_template(full_template)
 structured_llm = my_model.with_structured_output(CandidateProfile)
 
-def run_auditor_llm( prompt_template, resume_text, notes):
+def Resume_extaction( prompt_template, resume_text, notes):
     parser = PydanticOutputParser(pydantic_object=CandidateProfile)
     format_instructions = parser.get_format_instructions()
     
@@ -37,6 +39,6 @@ def run_auditor_llm( prompt_template, resume_text, notes):
 
 def resume_data():
     notes = ""
-    result = run_auditor_llm( prompt_template, text, notes)
+    result = Resume_extaction( prompt_template, text, notes)
     return result
 print(resume_data())

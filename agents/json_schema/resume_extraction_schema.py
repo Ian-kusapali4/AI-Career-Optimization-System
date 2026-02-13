@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+#the data being extracted from the resume after assessment 
 class CandidateProfile(BaseModel):
     
     jobTitle: str = Field(description="The professional title the candidate is currently holding or targeting.")

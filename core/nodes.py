@@ -1,6 +1,6 @@
-from agents.auditor_logic import run_auditor_llm,yaml_extraction
+from agents.Resume_extraction_agent import run_auditor_llm,yaml_extraction
 from langchain_core.prompts import ChatPromptTemplate
-from agents.json_schema.json_schema import CandidateProfile
+from agents.json_schema.resume_extraction_schema import CandidateProfile
 from langchain_ollama import ChatOllama
 from schema import GraphState
 

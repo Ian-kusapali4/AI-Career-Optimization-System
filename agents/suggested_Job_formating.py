@@ -1,11 +1,12 @@
 
-from agents.auditor_logic import resume_data 
-from agents.architect import generate_career_suggestions
+from agents.Resume_extraction_agent import resume_data 
+from agents.Career_Path_Agent import generate_career_suggestions
 from services.parser.yaml_parser import yaml_extraction
 
+#Loops throught the suggested jobs and separates the job title and reasoning 
 
-def main():
-    # --- 1. AUDIT ---
+def suggested_Job_formating():
+    
     print("Step 1: Auditing Resume...")
     profile = resume_data() 
     config = yaml_extraction('Jobalocation.yaml')
@@ -14,7 +15,7 @@ def main():
     
     just_titles = [item.title for item in career_path_obj.suggestions]
 
-    # --- 5. OUTPUT ---
+   
     print("\n" + "="*40)
     print("LIST OF TARGET TITLES FOR SCRAPER:")
     print("="*40)
@@ -24,5 +25,5 @@ def main():
     return just_titles
 
 if __name__ == "__main__":
-    final_titles = main()
+    final_titles = suggested_Job_formating()
     print(final_titles)
