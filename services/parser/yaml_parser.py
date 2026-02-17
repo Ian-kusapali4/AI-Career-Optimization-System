@@ -12,7 +12,7 @@ def yaml_extraction(filename):
         with open(yaml_file_path, 'r') as file:
             config_data = yaml.safe_load(file)
             
-        print("Imported auditor data:")
+        print("Yaml file loaded successfully.")
         
         
 
