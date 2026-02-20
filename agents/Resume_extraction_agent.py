@@ -1,6 +1,6 @@
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
-from services.parser.pdf_resume_reader import pdf_reader
+
 from agents.json_schema.resume_extraction_schema import CandidateProfile
 from langchain_core.output_parsers import PydanticOutputParser
 from services.parser.yaml_parser import yaml_extraction

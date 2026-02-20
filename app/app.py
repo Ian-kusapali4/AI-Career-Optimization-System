@@ -29,7 +29,7 @@ if 'ranked_jobs' not in st.session_state:
 if 'selected_job' not in st.session_state:
     st.session_state.selected_job = None
 
-st.title("🛡️ AI Career Optimization System")
+st.title("🛡️ Indigo")
 
 # STEP 1: RESUME UPLOAD & AUDIT
 if st.session_state.step == 1:
