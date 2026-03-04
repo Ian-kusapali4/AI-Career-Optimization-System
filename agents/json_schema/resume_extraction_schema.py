@@ -18,9 +18,6 @@ class CandidateProfile(BaseModel):
     
     skills: List[str] = Field(description="Technical skills found in the resume (e.g., Python, Pytest, Docker, Rust).")
     years_of_experience: int = Field(description="Total number of years in software development or relevant fields.")
-    
-    
-    expected_salary_min: Optional[int] = Field(description="The minimum yearly salary expectation in USD.")
 
     
     jobExcerpt: str = Field(description="A 2-3 sentence professional summary highlighting the candidate's best qualifications.")

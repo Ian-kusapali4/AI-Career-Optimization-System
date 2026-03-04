@@ -1,13 +1,20 @@
 from typing import List
 from pydantic import BaseModel, Field
+from typing import List, Dict, Optional
 
 
 class GraphState(BaseModel):
-    raw_resume: str          # The starting text
-    #user_notes: str          # User's extra context
-    parsed_skills: dict      # Structured data (JSON)
-    search_queries: List[str]# Google search strings
-    query_search_response: bool #check if the user is happy with the search results or if we need to retry with different queries
-    job_listings: List[dict] # Results from the web
-    selected_job_id: str     # The user's choice
-    final_resume: str        # The output
+    
+    file: str
+    raw_resume: Optional[str] = None
+    parsed_skills: Optional[Dict] = None
+    search_queries: Optional[Dict] = [] # Or default to an empty list
+    Profile: Optional[Dict] = None
+    title_suggestions: Optional[List[Dict]] = None
+    query_search_response: Optional[bool] = None
+    job_listings: List[Dict] = Field(default_factory=list) 
+    selected_job_id: Optional[str] = None
+    rewritten_resume: Optional[str] = None
+    final_resume: Optional[str] = None
+    feedback: Optional[str] = None
+    

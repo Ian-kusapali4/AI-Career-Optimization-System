@@ -1,7 +1,7 @@
 import requests
 import urllib.parse
 import re
-
+from core.Nodes.GraphState import GraphState
 
 def fetch_jobs(query, limit=20):
     headers = {
@@ -65,7 +65,7 @@ def fetch_jobs(query, limit=20):
         except Exception as err:
             print(f"  ! Error fetching from {source['name']}: {err}")
 
-    return all_jobs
+    return {"job_listings": all_jobs}
 
 if __name__ == "__main__":
    
