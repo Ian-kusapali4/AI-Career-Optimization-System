@@ -1,152 +1,133 @@
 import streamlit as st
-import sys
 import os
+import sys
 
-
+# Ensure core modules are discoverable
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from agents.Resume_extraction_agent import resume_data 
-from agents.suggested_Job_formating import suggested_Job_formating 
-from services.parser.yaml_parser import yaml_extraction
-from services.parser.pdf_resume_reader import pdf_reader
-from agents.Job_ranker import start_career_optimization
-from agents.resume_rewrite_agent import resume_rewrite 
+from core.Nodes.nodes import nodes 
+from core.Nodes.GraphState import GraphState
 
+# --- 1. Page Config ---
+st.set_page_config(page_title="Hire-ability Engine", layout="wide", page_icon="🚀")
 
-config = yaml_extraction('config.yaml')
-ranking_config = yaml_extraction('jobrating.yaml')
+if "graph_app" not in st.session_state:
+    st.session_state.graph_app = nodes()
+    st.session_state.thread_id = "streamlit_session_1"
 
-st.set_page_config(page_title="AI Career Optimization System", layout="wide")
+config = {"configurable": {"thread_id": st.session_state.thread_id}}
 
-if 'step' not in st.session_state:
-    st.session_state.step = 1
-if 'profile_data' not in st.session_state:
-    st.session_state.profile_data = None
-if 'suggested_titles' not in st.session_state:
-    st.session_state.suggested_titles = None
-if 'ranked_jobs' not in st.session_state:
-    st.session_state.ranked_jobs = []
-if 'selected_job' not in st.session_state:
-    st.session_state.selected_job = None
+st.title("🚀 Indigo")
+st.subheader("AI-Powered Resume Tailoring & Job Matching")
 
-st.title("🛡️ Indigo")
-
-# STEP 1: RESUME UPLOAD & AUDIT
-if st.session_state.step == 1:
-    st.header("Step 1: Resume Extraction & Audit")
-    uploaded_file = st.file_uploader("Upload Target Resume", type="pdf")
+# --- 2. Sidebar: Ingestion ---
+with st.sidebar:
+    st.header("1. Upload Resume")
+    uploaded_file = st.file_uploader("Choose a PDF resume", type="pdf")
     
-    if uploaded_file and st.button("Audit Resume"):
-        with st.spinner("🔍 Step 1: Auditing Resume..."):
-            temp_path = "temp_upload.pdf"
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            
-            extracted_text = pdf_reader(temp_path)
-            st.session_state.profile_data = resume_data(extracted_text) 
-            st.session_state.suggested_titles = suggested_Job_formating(extracted_text)
-            
-            st.session_state.step = 2
-            if os.path.exists(temp_path): os.remove(temp_path)
-            st.rerun()
+    if uploaded_file:
+        temp_path = os.path.join("temp_resume.pdf")
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.success("Resume Uploaded!")
 
-# STEP 2: JOB SEARCH & RANKING
-if st.session_state.step == 2:
-    st.header("Step 2: Live Job Matching")
-    st.success("✅ Resume Audited. Suggested Roles identified.")
+# --- 3. Main Workflow Logic ---
+if uploaded_file:
+    current_state = st.session_state.graph_app.get_state(config)
+    values = current_state.values
     
-    titles = st.session_state.suggested_titles if st.session_state.suggested_titles else []
-    st.write(f"**Target Titles:** {', '.join(titles)}")
-
-    if st.button("Search & Rank Jobs"):
-        with st.status("🚀 Running Career Optimization...", expanded=True) as status:
-            results = start_career_optimization(
-                resume_text=st.session_state.profile_data, 
-                job_tags=st.session_state.suggested_titles,
-                configer=ranking_config,
-                status_widget=status 
-            )
-            status.update(label="✅ Analysis Complete!", state="complete", expanded=False)
-        
-        st.session_state.ranked_jobs = results
-        st.session_state.step = 3
-        st.rerun()
-
-# STEP 3: DISPLAY RANKED JOBS
-if st.session_state.step == 3:
-    st.header("Step 3: Top Matches for You")
-    
-    num_jobs = len(st.session_state.ranked_jobs)
-    col_a, col_b = st.columns(2)
-    col_a.metric("Total Jobs Evaluated", num_jobs)
-    col_b.info("Check the match reasons and apply or tailor your resume.")
-
-    if num_jobs == 0:
-        st.warning("No matches found.")
-        if st.button("Back to Search"):
-            st.session_state.step = 1
-            st.rerun()
+    # --- STAGE DETECTION ---
+    has_final_resume = values.get("rewritten_resume") is not None
+    is_interrupted = len(current_state.next) > 0 and "__interrupt__" in str(current_state.next)
+    if values is not None:
+        job_listings_data = values.get("job_listings") or {}
+        job_results = job_listings_data.get("results", [])
     else:
-        for idx, job in enumerate(st.session_state.ranked_jobs):
-           
-            job_details = job.get('full_job_data', {})
-            job_url = job_details.get('url') or job_details.get('link') or job.get('url')
+        job_results = []
+        st.error("📡 The Graph returned an empty state. Ollama might have timed out.")
+    has_jobs = len(job_results) > 0
+
+    # STAGE 3: Final Result (Rewrite Complete)
+    if has_final_resume:
+        st.balloons()
+        st.success("✨ Your human-centric resume is ready!")
+        
+        col_left, col_right = st.columns(2)
+        with col_left:
+            st.subheader("📋 Extracted Profile")
+            st.json(values.get("CandidateProfile", {}))
             
-            with st.container(border=True):
-                col_info, col_btn = st.columns([3, 1])
-                
-                with col_info:
-                    st.subheader(f"{job.get('title', 'N/A')}")
-                    st.write(f"🏢 **Company:** {job.get('company', 'N/A')}")
+        with col_right:
+            st.subheader("✍️ Tailored Resume")
+            st.markdown(values["rewritten_resume"])
+            
+            st.download_button(
+                label="📥 Download as Markdown",
+                data=values["rewritten_resume"],
+                file_name="tailored_resume.md",
+                mime="text/markdown",
+                use_container_width=True
+            )
+            
+        if st.button("🔄 Start New Analysis", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
+
+    # STAGE 2: AI Insights & Job Selection (If we have jobs or graph is interrupted)
+    elif is_interrupted or has_jobs:
+        if not has_jobs:
+            st.error("🕵️ No jobs found for your specific titles.")
+            st.info("The AI suggested very specific roles that aren't currently listed on Jobicy/Arbeitnow.")
+            if st.button("🔄 Try Broad Search"):
+                # Manually inject a broad query and restart
+                st.session_state.graph_app.update_state(config, {"search_queries": {"suggestions": [{"title": "Administrative", "reason": "Broad search fallback"}]}})
+                st.rerun()
+        else:
+            # 1. AI CAREER INSIGHTS
+            st.header("🎯 AI Career Insights")
+            suggestions = values.get("search_queries", {}).get("suggestions", [])
+            
+            if suggestions:
+                cols = st.columns(len(suggestions))
+                for i, sug in enumerate(suggestions):
+                    with cols[i]:
+                        with st.expander(f"📌 {sug['title']}", expanded=True):
+                            st.caption("Strategic Reason:")
+                            st.write(sug['reason'])
+            st.divider()
+
+            # 2. JOB LISTINGS DASHBOARD
+            st.header("🔍 Matching Job Openings")
+            for i, job in enumerate(job_results):
+                with st.container(border=True):
+                    col_info, col_score, col_action = st.columns([3, 1, 1])
                     
-                    score_val = float(job.get('score', 0))
-                    st.progress(score_val / 10, text=f"Match Score: {score_val}/10")
-                    st.info(f"**AI Reasoning:** {job.get('reason', 'N/A')}")
-
-                with col_btn:
-                    st.write("### Actions")
+                    with col_info:
+                        st.subheader(job['title'])
+                        st.write(f"🏢 **{job['company']}** | 📍 {job.get('source', 'Web Source')}")
+                        with st.expander("📖 View Full Description"):
+                            st.write(job.get('description', "No description provided."))
                     
-                    if job_url:
-                        st.link_button("🌐 Apply on Site", job_url, use_container_width=True)
-                    else:
-                        st.button("🔗 Link Missing", disabled=True, use_container_width=True)
                     
-                   
-                    if st.button(f"✍️ Tailor Resume", key=f"tailor_{idx}", use_container_width=True):
-                        st.session_state.selected_job = job
-                        st.session_state.step = 4
-                        st.rerun()
+                    with col_action:
+                        st.link_button("🔗 Apply Now", job['url'], use_container_width=True)
+                        
+                        if st.button("🚀 Tailor Resume", key=f"btn_{i}", use_container_width=True):
+                            with st.spinner("Pruning data and generating rewrite..."):
+                                st.session_state.graph_app.update_state(config, {"selected_job_id": str(i)})
+                                for event in st.session_state.graph_app.stream(None, config, stream_mode="updates"):
+                                    st.write(f"✔️ {list(event.keys())[0]} finished.")
+                                st.rerun()
 
-                
-                with st.expander("📖 View Full Job Description"):
-                    description = job_details.get('description', "No description text found.")
-                    st.markdown(description)
+    # STAGE 1: Start Fresh (Resume uploaded, but no search started)
+    else:
+        st.info("👋 Resume uploaded. Ready to find matching jobs!")
+        if st.button("🔍 Find Matching Jobs", type="primary"):
+            with st.spinner("Analyzing Resume & Scraping Job Boards..."):
+                initial_input = {"file": temp_path}
+                for event in st.session_state.graph_app.stream(initial_input, config, stream_mode="updates"):
+                    st.write(f"✔️ {list(event.keys())[0]} finished.")
+                st.rerun()
 
-    if st.button("⬅️ Restart Search"):
-        st.session_state.step = 1
-        st.rerun()
-
-# STEP 4: RESUME TAILORING
-if st.session_state.step == 4:
-    job_data = st.session_state.selected_job
-    st.header(f"Step 4: Tailoring Resume for {job_data.get('title')}")
-    st.subheader(f"Targeting: {job_data.get('company')}")
-    
-    with st.spinner("✍️ Writing tailored resume..."):
-        final_text = resume_rewrite(
-            resume_text=st.session_state.profile_data, 
-            selected_job=job_data
-        )
-        st.text_area("Generated Tailored Content", final_text, height=500)
-        
-        
-        st.download_button(
-            label="💾 Download Tailored Resume",
-            data=final_text,
-            file_name=f"Resume_{job_data.get('company')}.txt",
-            mime="text/plain"
-        )
-
-    if st.button("Back to Job List"):
-        st.session_state.step = 3
-        st.rerun()
+else:
+    st.info("Please upload a resume in the sidebar to begin.")

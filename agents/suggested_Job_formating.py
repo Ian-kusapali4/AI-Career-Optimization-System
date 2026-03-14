@@ -9,24 +9,26 @@ def suggested_Job_formating(state: GraphState):
     # Check if state is a dict (common in LangGraph streaming) or an object
     if isinstance(state, dict):
         # If it's a dict, we access keys with .get()
-        parsed_skills = state.get('parsed_skills', {})
+        CandidateProfile = state.get('CandidateProfile', {})
     else:
-        parsed_skills = state.parsed_skills
+        CandidateProfile = state.CandidateProfile
     profile = {
-        'jobTitle': parsed_skills.get('jobTitle', 'Not Specified'),
-        'companyName': parsed_skills.get('companyName', 'Not Specified'),
-        'jobIndustry': parsed_skills.get('jobIndustry', 'Not Specified'),
-        'jobLevel': parsed_skills.get('jobLevel', 'Not Specified'),       
-        'skills': parsed_skills.get('skills', []),
-        'years_of_experience': parsed_skills.get('years_of_experience', 0),
-        'jobExcerpt': parsed_skills.get('jobExcerpt', 'No summary available')
+        'jobTitle': CandidateProfile.get('jobTitle', 'Not Specified'),
+        'companyName': CandidateProfile.get('companyName', 'Not Specified'),
+        'jobIndustry': CandidateProfile.get('jobIndustry', 'Not Specified'),
+        'jobLevel': CandidateProfile.get('jobLevel', 'Not Specified'),       
+        'skills': CandidateProfile.get('skills', []),
+        'years_of_experience': CandidateProfile.get('years_of_experience', 0),
+        'jobExcerpt': CandidateProfile.get('jobExcerpt', 'No summary available')
     }
 
     result = generate_career_suggestions(profile)
+    print(f"🔍 DEBUG: Profile extracted successfully: {profile} ❌ (CandidateProfile 2)")
+
 
     # Return the dictionary to update the GraphState
     return {
-        "Profile": profile, 
+        "CandidateProfile": profile, 
         "search_queries": result.model_dump()
     }
     # just_titles = [item.title for item in career_path_obj.suggestions]

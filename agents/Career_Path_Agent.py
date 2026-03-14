@@ -5,19 +5,14 @@ from langchain_core.prompts import ChatPromptTemplate
 from agents.json_schema.Career_architect_schema import CareerPath
 from services.parser.yaml_parser import yaml_extraction
 from core.Nodes.GraphState import GraphState
+from core.model_factory import get_model
 
 
 
 #agent set to generating career path suggestions 
 
 # Set up the model
-config = yaml_extraction('config.yaml')
-if config is None:
-    print("Critical Error: Configuration could not be loaded. Exiting.")
-    exit(1) 
-model_name = config['model_settings']['name']
-
-my_model = ChatOllama(model=model_name)
+my_model = get_model()
 
 def generate_career_suggestions(profile_data: dict):
 

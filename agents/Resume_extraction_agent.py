@@ -1,4 +1,4 @@
-from langchain_ollama import ChatOllama
+from core.model_factory import get_model
 from langchain_core.prompts import ChatPromptTemplate
 
 from agents.json_schema.resume_extraction_schema import CandidateProfile
@@ -7,20 +7,9 @@ from services.parser.yaml_parser import yaml_extraction
 from core.Nodes.GraphState import GraphState
 
 #Resume extraction agent, takes resume data and extracts the relevant fields
-
-
+my_model = get_model()
 print("--- Loading Resume_extraction_agent.py ---")
 config_data = yaml_extraction('auditor.yaml')
-config = yaml_extraction('config.yaml')
-if config is None:
-    print("Critical Error: Configuration could not be loaded. Exiting.")
-    exit(1) 
-model_name = config['model_settings']['name']
-
-my_model = ChatOllama(model=model_name)
-
-
-
 
 def Resume_extaction(state:GraphState=None):
 
@@ -41,10 +30,6 @@ def Resume_extaction(state:GraphState=None):
     })
     profile_dict = response.model_dump() 
 
-    print(f"🔍 DEBUG: CandidateProfile extracted successfully: {profile_dict}")
+    print(f"🔍 DEBUG: CandidateProfile extracted successfully: {profile_dict} ❌ CandidateProfile 1")
 
-    return {"parsed_skills": profile_dict}
-# def resume_data(text_input, graph_state:GraphState=None):
-   
-#     result = Resume_extaction( prompt_template, text_input)
-#     return result
+    return {"CandidateProfile": profile_dict}

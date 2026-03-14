@@ -1,18 +1,25 @@
 import json
-from langchain_ollama import ChatOllama
 from services.parser.yaml_parser import yaml_extraction
 from services.scraper.Job_scraper import fetch_jobs
+from core.model_factory import get_model
 from core.Nodes.GraphState import GraphState
 
 
-config_base = yaml_extraction('config.yaml')
-model_name = config_base['model_settings']['name'] if config_base else "llama3"
-my_model = ChatOllama(model=model_name)
+my_model = get_model()
 
 def start_career_optimization( configer, status_widget=None,state:GraphState=None):
    
-    current_tag = state['search_queries'][0] if isinstance(state['search_queries'], list) else state['search_queries']
-    
+    queries = state.get('search_queries') or {}
+
+    # Check if it's a list (old format) or a dict with 'suggestions' (new format)
+    if isinstance(queries, list) and len(queries) > 0:
+        current_tag = queries[0]
+    elif isinstance(queries, dict):
+        # Adjust this to match how you are storing suggestions (e.g., getting the first title)
+        suggestions = queries.get("suggestions", [])
+        current_tag = suggestions[0].get("title") if suggestions else "Remote"
+    else:
+        current_tag = "Remote" # Ultimate fallback
     if status_widget:
         status_widget.write(f"🔍 Searching for: **{current_tag}**...")
     

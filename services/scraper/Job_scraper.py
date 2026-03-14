@@ -1,84 +1,72 @@
-import requests
-import urllib.parse
-import re
+import pandas as pd
+import time
+import random
+from jobspy import scrape_jobs
 from core.Nodes.GraphState import GraphState
 
-def fetch_jobs(query, limit=20):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-    }
+def fetch_jobs(state: GraphState):
+    # 1. Gather suggestions and local location
+    suggestions = state.search_queries.get("suggestions", [])
     
-   
-    sources = [
-        {
-            "name": "Jobicy",
-            "url": f"https://jobicy.com/api/v2/remote-jobs?tag={query}",
-            "root": "jobs",           
-            "map": {
-                "title": "jobTitle", 
-                "desc": "jobDescription",
-                "company": "companyName",
-                "url": "url"
-            }
-        },
-        {
-            "name": "Arbeitnow",
-            "url": f"https://www.arbeitnow.com/api/job-board-api?search={query}",
-            "root": "data",           
-            "map": {
-                "title": "title", 
-                "desc": "description",
-                "company": "company_name", # Arbeitnow specific key
-                "url": "url"
-            }
-        }
-    ]
+    # We use 'jobGeo' because your logs showed extracted location there
+    location = state.CandidateProfile.get("jobGeo", "Remote") 
+    
+    # Create the list of titles to search
+    search_titles = [s.get("title") for s in suggestions] if suggestions else [state.CandidateProfile.get("jobTitle", "Software Engineer")]
+    
+    print(f"🚀 AI suggested titles for search: {search_titles}")
 
-    all_jobs = []
+    all_scraped_jobs = []
 
-    for source in sources:
+    # 2. LOOP through each title with Human-like delays
+    for index, title in enumerate(search_titles):
+        # Only sleep if it's NOT the first search
+        if index > 0:
+            delay = random.uniform(2.5, 5.5) # Random sleep between 2.5 and 5.5 seconds
+            print(f"😴 Mimicking human behavior... waiting {delay:.2f}s before next search.")
+            time.sleep(delay)
+
+        print(f"🔍 Searching for: '{title}' in '{location}'...")
+        
         try:
-            print(f"[Scraper] Requesting {source['name']}...")
-            response = requests.get(source['url'], headers=headers, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            raw_jobs = data.get(source['root'], [])
-            
-            
-            for item in raw_jobs[:limit]:
-               
-                raw_desc = item.get(source['map']['desc'], "")
-                clean_desc = re.sub(r'<[^>]*>', '', raw_desc) 
-                
-                job_object = {
-                    "title": item.get(source['map']['title']),
-                    "company": item.get(source['map']['company'], "N/A"),
-                    "url": item.get(source['map']['url']),
-                    "description": clean_desc.strip(),
-                    "source": source['name']
-                }
-                all_jobs.append(job_object)
-            
-            print(f"  > Collected {len(all_jobs)} jobs (limited to {limit}) from {source['name']}")
+            jobs_df = scrape_jobs(
+                site_name=["indeed", "linkedin", "zip_recruiter", "google"],
+                search_term=title,
+                location=location,
+                results_wanted=10, 
+                hours_old=72,
+                country_indeed='USA',
+                linkedin_fetch_description=True 
+            )
 
-        except Exception as err:
-            print(f"  ! Error fetching from {source['name']}: {err}")
+            if not jobs_df.empty:
+                for _, row in jobs_df.iterrows():
+                    job_object = {
+                        "title": str(row.get('title', 'N/A')),
+                        "company": str(row.get('company', 'N/A')),
+                        "url": str(row.get('job_url', '')),
+                        "description": str(row.get('description', 'No description available.')),
+                        "source": str(row.get('site', 'Unknown')),
+                        "location": str(row.get('location', 'N/A')),
+                        "match_score": 0 
+                    }
+                    all_scraped_jobs.append(job_object)
+                    
+        except Exception as e:
+            print(f"⚠️ JobSpy failed for '{title}': {e}")
+            continue 
 
-    return {"job_listings": all_jobs}
+    # 3. Deduplicate based on Job URL
+    seen_urls = set()
+    unique_jobs = []
+    for job in all_scraped_jobs:
+        if job['url'] not in seen_urls:
+            unique_jobs.append(job)
+            seen_urls.add(job['url'])
 
-if __name__ == "__main__":
-   
-    search_tags = ["python developer"] 
-    
-    total_found = 0
+    print(f"✅ Total Unique Jobs Found: {len(unique_jobs)}")
 
-    for tag in search_tags:
-
-        formatted_query = urllib.parse.quote(tag)
-        found_jobs = fetch_jobs(formatted_query)
-        total_found += len(found_jobs)
-
-    print(f"\n--- SCRAPING COMPLETE ---")
-    print(f"Total unique job objects ready for AI analysis: {total_found}")
-    print(tag)
+    return {
+        "job_listings": {"results": unique_jobs, "total_found": len(unique_jobs)},
+        "retry_count": state.retry_count + 1
+    }
