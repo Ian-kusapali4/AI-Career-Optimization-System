@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import sys
 
-# Ensure core modules are discoverable
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.Nodes.nodes import nodes 
@@ -36,7 +35,7 @@ if uploaded_file:
     current_state = st.session_state.graph_app.get_state(config)
     values = current_state.values
     
-    # --- STAGE DETECTION ---
+   
     has_final_resume = values.get("rewritten_resume") is not None
     is_interrupted = len(current_state.next) > 0 and "__interrupt__" in str(current_state.next)
     if values is not None:
@@ -79,7 +78,7 @@ if uploaded_file:
             st.error("🕵️ No jobs found for your specific titles.")
             st.info("The AI suggested very specific roles that aren't currently listed on Jobicy/Arbeitnow.")
             if st.button("🔄 Try Broad Search"):
-                # Manually inject a broad query and restart
+                
                 st.session_state.graph_app.update_state(config, {"search_queries": {"suggestions": [{"title": "Administrative", "reason": "Broad search fallback"}]}})
                 st.rerun()
         else:
