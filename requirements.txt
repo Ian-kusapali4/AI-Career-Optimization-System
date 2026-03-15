@@ -1,11 +1,3 @@
-# python-jobspy
-# numpy>=1.26.4
-# markdownify
-# regex
-# tls-client==1.0.1
-# requests
-# pydantic
-# bs4
 python-jobspy
 langchain_core
 langchain_ollama

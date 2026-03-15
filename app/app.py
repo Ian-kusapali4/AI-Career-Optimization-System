@@ -8,7 +8,7 @@ from core.Nodes.nodes import nodes
 from core.Nodes.GraphState import GraphState
 
 # --- 1. Page Config ---
-st.set_page_config(page_title="Hire-ability Engine", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="Indigo", layout="wide", page_icon="🚀")
 
 if "graph_app" not in st.session_state:
     st.session_state.graph_app = nodes()
@@ -16,10 +16,10 @@ if "graph_app" not in st.session_state:
 
 config = {"configurable": {"thread_id": st.session_state.thread_id}}
 
-st.title("🚀 Indigo")
+st.title("🚀 Indigo ai job app")
 st.subheader("AI-Powered Resume Tailoring & Job Matching")
 
-# --- 2. Sidebar: Ingestion ---
+
 with st.sidebar:
     st.header("1. Upload Resume")
     uploaded_file = st.file_uploader("Choose a PDF resume", type="pdf")
@@ -30,7 +30,7 @@ with st.sidebar:
             f.write(uploaded_file.getbuffer())
         st.success("Resume Uploaded!")
 
-# --- 3. Main Workflow Logic ---
+
 if uploaded_file:
     current_state = st.session_state.graph_app.get_state(config)
     values = current_state.values
@@ -46,7 +46,7 @@ if uploaded_file:
         st.error("📡 The Graph returned an empty state. Ollama might have timed out.")
     has_jobs = len(job_results) > 0
 
-    # STAGE 3: Final Result (Rewrite Complete)
+  
     if has_final_resume:
         st.balloons()
         st.success("✨ Your human-centric resume is ready!")
@@ -72,7 +72,7 @@ if uploaded_file:
             st.session_state.clear()
             st.rerun()
 
-    # STAGE 2: AI Insights & Job Selection (If we have jobs or graph is interrupted)
+
     elif is_interrupted or has_jobs:
         if not has_jobs:
             st.error("🕵️ No jobs found for your specific titles.")
@@ -82,8 +82,8 @@ if uploaded_file:
                 st.session_state.graph_app.update_state(config, {"search_queries": {"suggestions": [{"title": "Administrative", "reason": "Broad search fallback"}]}})
                 st.rerun()
         else:
-            # 1. AI CAREER INSIGHTS
-            st.header("🎯 AI Career Insights")
+         
+            st.header(" AI Career Insights")
             suggestions = values.get("search_queries", {}).get("suggestions", [])
             
             if suggestions:
@@ -95,7 +95,7 @@ if uploaded_file:
                             st.write(sug['reason'])
             st.divider()
 
-            # 2. JOB LISTINGS DASHBOARD
+          
             st.header("🔍 Matching Job Openings")
             for i, job in enumerate(job_results):
                 with st.container(border=True):
