@@ -3,6 +3,7 @@ from langchain_ollama import ChatOllama
 from langchain_groq import ChatGroq
 from services.parser.yaml_parser import yaml_extraction
 
+#the center of all llm models used in the system
 def get_groq_model():
     """
     Centralized function to initialize the LLM based on YAML config.
@@ -12,7 +13,7 @@ def get_groq_model():
     if config is None:
         print("Critical Error: Configuration could not be loaded. Exiting.")
         exit(1) 
-    # Extract settings with safe fallbacks
+    
     model_settings = config.get('model_settings', {})
     model_name = model_settings.get('name', 'llama3')
     temperature = model_settings.get('temperature', 0)

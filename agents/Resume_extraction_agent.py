@@ -12,6 +12,7 @@ print("--- Loading Resume_extraction_agent.py ---")
 config_data = yaml_extraction('auditor.yaml')
 
 def Resume_extaction(state:GraphState=None):
+    """This agent is responsible for extracting relevant information from the candidate's resume. It takes the raw resume text as input and produces a structured CandidateProfile object that includes key details such as skills, experience, and education."""
 
     if state is None:
         print("❌ ERROR: State reached the node as None!")

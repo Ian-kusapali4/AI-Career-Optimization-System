@@ -2,14 +2,13 @@ from core.Nodes.GraphState import GraphState
 from services.parser.yaml_parser import yaml_extraction
 from core.model_factory import get_model
 
-
+#these are the graph condtions
 my_model = get_model()
 critic_config = yaml_extraction('critic_resume_rewrite.yaml')
 
 def ingestion_condition(graph_state: GraphState) -> bool:
     """
-    Check if the graph state has the necessary information to proceed with ingestion.
-    For example, we might require a raw resume to be present before we can extract skills.
+    these are the graph condtions that will be used to check if the graph can proceed to the next node, if the conditions are not met, the graph can retry the previous node or end with an error message.
     """
     count = 0
     if not graph_state.raw_resume:

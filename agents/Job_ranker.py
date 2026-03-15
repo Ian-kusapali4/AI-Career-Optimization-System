@@ -4,22 +4,24 @@ from services.scraper.Job_scraper import fetch_jobs
 from core.model_factory import get_model
 from core.Nodes.GraphState import GraphState
 
+#this agent is currently not in use because of token useage, but we plan to use it in the future to rank jobs based on the candidate's profile and the job description. It will take the job listings fetched by the scraper and use an LLM to score and rank them based on relevance to the candidate's profile and the job requirements. 
+#currntly exporing four options either we use rag to store the jobs found and then use the model to rank them since the context window will be smaller  or we use a hrd coded funtion to rank the jobs based on key factors like required skills, location, and company size. The third option is to use a more powerful model with a larger context window that can handle the full job descriptions without needing to summarize them first or maybe we can use a combination of all three approaches to optimize the ranking process while managing token usage effectively.
 
 my_model = get_model()
 
 def start_career_optimization( configer, status_widget=None,state:GraphState=None):
-   
+    """This agent orchestrates the career optimization process. It takes the current graph state, extracts search queries, fetches relevant job listings, and then uses an LLM to score and rank these jobs based on the candidate's profile."""
     queries = state.get('search_queries') or {}
 
-    # Check if it's a list (old format) or a dict with 'suggestions' (new format)
+    
     if isinstance(queries, list) and len(queries) > 0:
         current_tag = queries[0]
     elif isinstance(queries, dict):
-        # Adjust this to match how you are storing suggestions (e.g., getting the first title)
+       
         suggestions = queries.get("suggestions", [])
         current_tag = suggestions[0].get("title") if suggestions else "Remote"
     else:
-        current_tag = "Remote" # Ultimate fallback
+        current_tag = "Remote" # Default fallback if no queries are found
     if status_widget:
         status_widget.write(f"🔍 Searching for: **{current_tag}**...")
     

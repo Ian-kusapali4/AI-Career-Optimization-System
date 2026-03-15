@@ -1,26 +1,27 @@
-import pandas as pd
 import time
 import random
 from jobspy import scrape_jobs
 from core.Nodes.GraphState import GraphState
 
+# This node is responsible for taking the job title suggestions from the Career Path Agent and using jobspy to scrape job listings from various platforms.
+
 def fetch_jobs(state: GraphState):
-    # 1. Gather suggestions and local location
+    
     suggestions = state.search_queries.get("suggestions", [])
     
-    # We use 'jobGeo' because your logs showed extracted location there
+   
     location = state.CandidateProfile.get("jobGeo", "Remote") 
     
-    # Create the list of titles to search
+  
     search_titles = [s.get("title") for s in suggestions] if suggestions else [state.CandidateProfile.get("jobTitle", "Software Engineer")]
     
     print(f"🚀 AI suggested titles for search: {search_titles}")
 
     all_scraped_jobs = []
 
-    # 2. LOOP through each title with Human-like delays
+    # LOOP through each title with Human-like delays to avoid bot detection and allow all suggented titles to be scraped
     for index, title in enumerate(search_titles):
-        # Only sleep if it's NOT the first search
+        
         if index > 0:
             delay = random.uniform(2.5, 5.5) # Random sleep between 2.5 and 5.5 seconds
             print(f"😴 Mimicking human behavior... waiting {delay:.2f}s before next search.")
@@ -56,7 +57,7 @@ def fetch_jobs(state: GraphState):
             print(f"⚠️ JobSpy failed for '{title}': {e}")
             continue 
 
-    # 3. Deduplicate based on Job URL
+ 
     seen_urls = set()
     unique_jobs = []
     for job in all_scraped_jobs:

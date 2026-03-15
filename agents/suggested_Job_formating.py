@@ -2,13 +2,13 @@
 from core.Nodes.GraphState import GraphState
 from agents.Career_Path_Agent import generate_career_suggestions
 
-
+# this agent is reposible for extracting the candidates profile into a structure format, two schemas are being used to force format the model output into a specific format
 def suggested_Job_formating(state: GraphState):
     print("Step: Generating Career Suggestions...")
     
-    # Check if state is a dict (common in LangGraph streaming) or an object
+    
     if isinstance(state, dict):
-        # If it's a dict, we access keys with .get()
+     
         CandidateProfile = state.get('CandidateProfile', {})
     else:
         CandidateProfile = state.CandidateProfile
@@ -26,23 +26,15 @@ def suggested_Job_formating(state: GraphState):
     print(f"🔍 DEBUG: Profile extracted successfully: {profile} ❌ (CandidateProfile 2)")
 
 
-    # Return the dictionary to update the GraphState
+
     return {
         "CandidateProfile": profile, 
         "search_queries": result.model_dump()
     }
-    # just_titles = [item.title for item in career_path_obj.suggestions]
 
-    # print("\n" + "="*40)
-    # print("LIST OF TARGET TITLES FOR SCRAPER:")
-    # print("="*40)
-    # for title in just_titles:
-    #     print(f"✅ {title}")
-    
-    # return {"search_tags": just_titles}
 
 if __name__ == "__main__":
-    # Local testing logic
+
     test_text = "Sample resume content for testing"
     final_titles = suggested_Job_formating(test_text)
     print(final_titles)

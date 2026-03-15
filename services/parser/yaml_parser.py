@@ -1,6 +1,7 @@
 import yaml
 import os
 
+#this funtion is responsible for reading yaml files and returning the data as a dictionary 
 def yaml_extraction(filename):
     project_root = os.path.dirname(os.path.dirname(__file__))
 

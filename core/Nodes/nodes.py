@@ -13,6 +13,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from langgraph.graph import StateGraph,START,END
 
+# This file defines the nodes and edges of the graph, as well as the conditions for transitioning between nodes. Each node corresponds to a specific agent or function that performs a task in the career optimization process, such as reading the resume, extracting skills, fetching job listings, rewriting the resume, etc. The edges define the flow of data and control between these nodes, and the conditions determine whether the graph can proceed to the next node or if it needs to retry or end with an error message.
 def nodes():
     graph = StateGraph(GraphState)
 
@@ -46,7 +47,7 @@ def nodes():
     })
 
     # Scraper -> Selection (NEW FLOW)
-    # Instead of going straight to rewrite, we go to our selection node
+   
     graph.add_edge('fetch_jobs', 'select_job_details')
 
     # Selection -> Rewrite (The Pruned Path)

@@ -4,21 +4,21 @@ from services.parser.yaml_parser import yaml_extraction
 from core.Nodes.GraphState import GraphState
 from core.model_factory import get_model
 
-
+# This agent is responsible for rewriting the resume based on the job description and the candidate's profile. It takes the original resume, the target job decription
 
 my_model = get_model()
 ranking_config = yaml_extraction('jobrating.yaml')
 
 def resume_rewrite(graph_state: GraphState):
-    # 1. Use the pruned data, not the ID
-    # In our Selection node, we saved the target job description to final_resume
+    """This agent is responsible for rewriting the resume based on the job description and the candidate's profile. It takes the original resume, the target job description"""
+    
     target_job_description = graph_state.final_resume 
-    resume_text = graph_state.raw_resume # Or CandidateProfile if you pruned raw_resume
+    resume_text = graph_state.raw_resume 
     
     try:
         rewrite_prompt = ranking_config['career_architect']['rewrite_template'].format(
             role=ranking_config['career_architect']['role'],
-            # ✅ PASS THE FULL TEXT, NOT THE ID
+          
             selected_job=target_job_description, 
             resume=resume_text
         )

@@ -2,7 +2,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 
-
+# This schema defines the structure of the GraphState, which is the central data object that flows through the graph. It includes all the inputs, extracted data, discovery data, final outputs, orchestration metadata, and feedback/evaluation fields that are relevant to the career optimization process. Each field is optional to allow for flexibility in the graph's execution flow.
 class GraphState(BaseModel):
     
     # 1. Inputs

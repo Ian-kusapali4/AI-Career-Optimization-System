@@ -11,7 +11,6 @@ from core.model_factory import get_model
 
 #agent set to generating career path suggestions 
 
-# Set up the model
 my_model = get_model()
 
 def generate_career_suggestions(profile_data: dict):
@@ -29,8 +28,7 @@ def generate_career_suggestions(profile_data: dict):
 
     structured_llm = my_model.with_structured_output(CareerPath, method="json_mode")
     chain = prompt_template | structured_llm
-
-    # Invoke with the clean dictionary
+    
     return chain.invoke(profile_data)
 
 def suggested_Job_formating(state: GraphState):
