@@ -26,6 +26,13 @@ An agentic AI workflow designed to automate the bridge between talent and opport
 * **Interface:** Streamlit, jupiter notebook(flow visualization)
 * **DevOps:** Docker (Python-slim base)
 * **Platform:** Hugging Face Spaces
+* **Evaluation:** langsmith 
+
+## 🔍 Observability & Evaluation
+Indigo uses **LangSmith** for full-lifecycle observability. This allows for:
+* **Trace Analysis:** Every agent decision, from skill extraction to final rewrite, is logged and traceable.
+* **Latency Monitoring:** Real-time tracking of LLM performance (e.g., monitoring the 170s+ rewrite cycles for optimization).
+* **Token Management:** Granular visibility into token consumption per node to ensure cost-efficiency.
 
 
 ## 🏗️ System Architecture (Current Flow)
