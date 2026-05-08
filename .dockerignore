@@ -1,8 +1,0 @@
-.venv
-.env
-__pycache__
-.git
-*.pyc
-resumes/*
-test/*
-run_tests.py

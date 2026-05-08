@@ -1,8 +1,8 @@
 import json
 from services.parser.yaml_parser import yaml_extraction
 from services.scraper.Job_scraper import fetch_jobs
-from core.model_factory import get_model
-from core.Nodes.GraphState import GraphState
+from Core.model_factory import get_model
+from Core.Unifiedstate import IndigoMasterState 
 
 #this agent is currently not in use because of token useage, but we plan to use it in the future to rank jobs based on the candidate's profile and the job description. It will take the job listings fetched by the scraper and use an LLM to score and rank them based on relevance to the candidate's profile and the job requirements. 
 #currntly exporing four options either we use rag to store the jobs found and then use the model to rank them since the context window will be smaller  or we use a hrd coded funtion to rank the jobs based on key factors like required skills, location, and company size. The third option is to use a more powerful model with a larger context window that can handle the full job descriptions without needing to summarize them first or maybe we can use a combination of all three approaches to optimize the ranking process while managing token usage effectively.

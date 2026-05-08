@@ -2,10 +2,10 @@ from unittest import result
 
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
-from agents.json_schema.Career_architect_schema import CareerPath
+from Job_match.agents.json_schema.Career_architect_schema import CareerPath
 from services.parser.yaml_parser import yaml_extraction
-from core.Nodes.GraphState import GraphState
-from core.model_factory import get_model
+from Core.Unifiedstate import IndigoMasterState 
+from Core.model_factory import get_model
 
 
 
@@ -31,7 +31,7 @@ def generate_career_suggestions(profile_data: dict):
     
     return chain.invoke(profile_data)
 
-def suggested_Job_formating(state: GraphState):
+def suggested_Job_formating(state: IndigoMasterState):
 
     profile_to_process = state.Profile 
     result = generate_career_suggestions(profile_to_process)
