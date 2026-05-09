@@ -1,4 +1,6 @@
 import json
+import re
+import unicodedata
 from Core.model_factory import get_model
 from langchain_core.prompts import ChatPromptTemplate
 from Core.Unifiedstate import CandidateProfile, IndigoMasterState
@@ -13,10 +15,10 @@ def Resume_extaction(state: IndigoMasterState = None):
         print("❌ ERROR: No resume text found in state!")
         return {}
 
-    full_template = f"{config_data['system_message']}\n\n{config_data['user_template']}"
+    system_msg = config_data['system_message'] + "\nSTRICT: Return ONLY raw JSON. No markdown."
+    full_template = f"{system_msg}\n\n{config_data['user_template']}"
     prompt_template = ChatPromptTemplate.from_template(full_template)
     
-    # Keeping structured approach
     structured_llm = my_model.with_structured_output(CandidateProfile)
     chain = prompt_template | structured_llm
     
@@ -27,32 +29,43 @@ def Resume_extaction(state: IndigoMasterState = None):
         return {"CandidateProfile": profile_dict}
 
     except Exception as e:
-        print(f"⚠️ EXTRACTION NODE: Standard parsing failed, attempting recovery...")
+        print(f"⚠️ EXTRACTION NODE: Standard parsing failed, attempting greedy recovery...")
         error_str = str(e)
         
-        if "failed_generation" in error_str:
-            try:
-                # 1. Isolate the JSON string from the error body
-                start_marker = "'failed_generation': '"
-                # Find the end of the string, avoiding trailing markers
-                raw_json = error_str.split(start_marker)[1].split("'}}")[0]
+        try:
+            # 1. Clean the string of bad unicode/non-breaking spaces first
+            cleaned_err = unicodedata.normalize("NFKC", error_str)
+            
+            # 2. GREEDY REGEX: Find the FIRST '{' and the LAST '}'
+            # This ignores everything outside the main JSON block, 
+            # effectively deleting the 'Extra data' (like those trailing }})
+            json_match = re.search(r'(\{.*\})', cleaned_err, re.DOTALL)
+            
+            if json_match:
+                json_str = json_match.group(1).strip()
                 
-                # 2. Clean up escape characters
-                clean_json = raw_json.replace("\\n", "").replace("\\", "")
-                data = json.loads(clean_json)
+                # 3. Clean up internal escape characters that often break LLM tool calls
+                json_str = json_str.replace("\\n", " ").replace('\\"', '"')
                 
-                # 3. Handle Tool Call structure (as seen in your logs)
-                # Your logs show: {"name": "CandidateProfile", "arguments": {...}}
-                if isinstance(data, dict) and "arguments" in data:
-                    recovered_profile = data["arguments"]
+                # 4. Parse the isolated JSON block
+                data = json.loads(json_str)
+                
+                # Handle cases where it's wrapped in 'arguments' or 'properties'
+                if isinstance(data, dict):
+                    if "arguments" in data:
+                        recovered_profile = data["arguments"]
+                    elif "properties" in data:
+                        recovered_profile = data["properties"]
+                    else:
+                        recovered_profile = data
                 else:
-                    recovered_profile = data
-                
-                print("♻️ RECOVERY SUCCESS: Extracted data from Tool Call error body.")
+                    raise ValueError("Extracted JSON is not a dictionary")
+
+                print("♻️ RECOVERY SUCCESS: CandidateProfile isolated and parsed.")
                 return {"CandidateProfile": recovered_profile}
                 
-            except Exception as recovery_err:
-                print(f"🚫 RECOVERY FAILED: {recovery_err}")
+        except Exception as recovery_err:
+            print(f"🚫 RECOVERY FAILED: {recovery_err}")
 
         print(f"❌ Extraction Node Permanently Failed: {e}")
-        return {"error_message": str(e)}
+        return {"CandidateProfile": {}, "error_message": str(e)}
