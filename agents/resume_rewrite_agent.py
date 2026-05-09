@@ -28,4 +28,4 @@ def resume_rewrite(graph_state: IndigoMasterState):
     print("\n--- AI IS REWRITING RESUME ---")
     final_resume = my_model.invoke(rewrite_prompt)
     
-    return {'rewritten_resume': final_resume.content}
+    return {'resume_suggestions': final_resume.content}

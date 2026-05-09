@@ -16,6 +16,6 @@ def human_rewritter_agent(graph_state: IndigoMasterState) -> str:
         target_job_description=graph_state.get("target_job_description")
     )
     
-    rewritten_resume = my_model.invoke(human_rewriter_prompt)
+    resume_suggestions = my_model.invoke(human_rewriter_prompt)
     
-    return {"final_resume": rewritten_resume.content}
+    return {"final_resume": resume_suggestions.content}
