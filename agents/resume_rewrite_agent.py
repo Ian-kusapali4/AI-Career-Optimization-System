@@ -1,15 +1,16 @@
 import json
 from langchain_ollama import ChatOllama
 from services.parser.yaml_parser import yaml_extraction
-from Core.Unifiedstate import IndigoMasterState 
+from Core.Unifiedstate import ElevateMasterState 
 from Core.model_factory import get_model
 
 # This agent is responsible for rewriting the resume based on the job description and the candidate's profile. It takes the original resume, the target job decription
 
-my_model = get_model()
+
 ranking_config = yaml_extraction('jobrating.yaml')
 
-def resume_rewrite(graph_state: IndigoMasterState):
+def resume_rewrite(graph_state: ElevateMasterState):
+    my_model = get_model()
     """This agent is responsible for rewriting the resume based on the job description and the candidate's profile. It takes the original resume, the target job description"""
     
     target_job_description = graph_state.get("final_resume") 

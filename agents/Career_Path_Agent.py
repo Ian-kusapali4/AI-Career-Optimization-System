@@ -4,16 +4,17 @@ from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from Job_match.agents.json_schema.Career_architect_schema import CareerPath
 from services.parser.yaml_parser import yaml_extraction
-from Core.Unifiedstate import IndigoMasterState 
+from Core.Unifiedstate import ElevateMasterState 
 from Core.model_factory import get_model
 
 
 
 #agent set to generating career path suggestions 
 
-my_model = get_model()
+
 
 def generate_career_suggestions(profile_data: dict):
+    my_model = get_model()
 
     """
     Takes CandidateProfile object and YAML config dictionary.
@@ -31,7 +32,7 @@ def generate_career_suggestions(profile_data: dict):
     
     return chain.invoke(profile_data)
 
-def suggested_Job_formating(state: IndigoMasterState):
+def suggested_Job_formating(state: ElevateMasterState):
 
     profile_to_process = state.Profile 
     result = generate_career_suggestions(profile_to_process)

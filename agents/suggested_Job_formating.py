@@ -1,9 +1,9 @@
 
-from Core.Unifiedstate import IndigoMasterState 
+from Core.Unifiedstate import ElevateMasterState 
 from Job_match.agents.Career_Path_Agent import generate_career_suggestions
 
 # this agent is reposible for extracting the candidates profile into a structure format, two schemas are being used to force format the model output into a specific format
-def suggested_Job_formating(state: IndigoMasterState):
+def suggested_Job_formating(state: ElevateMasterState):
     print("Step: Generating Career Suggestions...")
     
     

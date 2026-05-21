@@ -1,71 +1,92 @@
 import json
 import re
-import unicodedata
-from Core.model_factory import get_model
+import sys
+import time  # Added for network pacing
 from langchain_core.prompts import ChatPromptTemplate
-from Core.Unifiedstate import CandidateProfile, IndigoMasterState
+from Core.model_factory import get_model
+from Core.Unifiedstate import CandidateProfile, ElevateMasterState
 from services.parser.yaml_parser import yaml_extraction
+from services.rag.ingestion import ingest_resume_to_chroma
+from services.rag.retrieval import retrieve_focused_context
 
-my_model = get_model()
 config_data = yaml_extraction('auditor.yaml')
 
-def Resume_extaction(state: IndigoMasterState = None):
-    """Extracted relevant information from the candidate's resume."""
-    if state is None or not state.get("raw_resume"):
-        print("❌ ERROR: No resume text found in state!")
-        return {}
+def clean_llm_json(s):
+    match = re.search(r'\{.*\}', s, re.DOTALL)
+    return match.group(0) if match else s
 
-    system_msg = config_data['system_message'] + "\nSTRICT: Return ONLY raw JSON. No markdown."
-    full_template = f"{system_msg}\n\n{config_data['user_template']}"
-    prompt_template = ChatPromptTemplate.from_template(full_template)
-    
-    structured_llm = my_model.with_structured_output(CandidateProfile)
-    chain = prompt_template | structured_llm
-    
+def Resume_extaction(state: ElevateMasterState = None):
+    print("\n=== DEBUGGING NODE STATE & PAYLOADS ===")
+    if state is None or not state.get("raw_resume"):
+        print("❌ ERROR: No raw_resume text found in state!")
+        return {"CandidateProfile": {"skills": [], "jobTitle": "Unknown"}}
+
+    resume_size = len(state.get("raw_resume", ""))
+    print(f"📥 INCOMING STATE: raw_resume is {resume_size} characters.")
+
+    vector_db = None 
     try:
-        response = chain.invoke({"resume_text": state.get("raw_resume")})
-        profile_dict = response.model_dump() if hasattr(response, 'model_dump') else dict(response)
-        print(f"🔍 DEBUG: CandidateProfile extracted successfully!")
-        return {"CandidateProfile": profile_dict}
+        # --- PHASE 1 & 2: RAG PIPELINE ---
+        print("📦 RAG: Initializing ChromaDB vector store injection...")
+        vector_db = ingest_resume_to_chroma(state["raw_resume"])
+        
+        print("🔍 RAG: Executing schema-driven vector queries...")
+        focused_context = retrieve_focused_context(vector_db)
+        
+        context_size = len(focused_context) if focused_context else 0
+        print(f"🗃️ RETRIEVED CONTEXT: {context_size} characters prepared.")
+        
+        if not focused_context or not focused_context.strip():
+            raise ValueError("RAG pipeline returned empty context.")
+
+        # --- FIX 1: THE OLLAMA BREATHER ---
+        # Give the local Ollama service 2 seconds to clear its queue and 
+        # shut down the embedding connections before we open the LLM connection.
+        print("⏳ Pacing: Giving Ollama 2 seconds to flush embedding sockets...")
+        time.sleep(2)
+
+        # --- PHASE 3: STATE PARSING ---
+        print("🤖 RAG: Passing sanitized context chunks to LLM...")
+        system_msg = (
+            config_data['system_message'] + 
+            "\nSTRICT: Respond ONLY with a valid JSON object. "
+            "No markdown, no conversation."
+        )
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_msg),
+            ("user", "Extract data variables strictly using this context block:\n\n{focused_context}")
+        ])
+        
+        # --- FIX 2: FRESH PORT INSTANTIATION ---
+        # Instantiating the model here ensures a brand new, isolated HTTP client 
+        # is generated specifically for this call, preventing socket pollution.
+        fresh_model = get_model()
+        chain = prompt | fresh_model
+        
+        response = chain.invoke({"focused_context": focused_context})
+        
+        raw_output = response.content if hasattr(response, 'content') else str(response)
+        print(f"📨 LLM RESPONSE: {len(raw_output)} characters received.")
+        
+        match = re.search(r'\{.*\}', raw_output, re.DOTALL)
+        if not match:
+            raise ValueError("LLM response did not contain JSON.")
+            
+        cleaned_json = clean_llm_json(match.group(0))
+        extracted_data = json.loads(cleaned_json)
+        
+        print("✅ RAG Extraction Pipeline Successful")
+        return {"CandidateProfile": extracted_data}
 
     except Exception as e:
-        print(f"⚠️ EXTRACTION NODE: Standard parsing failed, attempting greedy recovery...")
-        error_str = str(e)
-        
-        try:
-            # 1. Clean the string of bad unicode/non-breaking spaces first
-            cleaned_err = unicodedata.normalize("NFKC", error_str)
-            
-            # 2. GREEDY REGEX: Find the FIRST '{' and the LAST '}'
-            # This ignores everything outside the main JSON block, 
-            # effectively deleting the 'Extra data' (like those trailing }})
-            json_match = re.search(r'(\{.*\})', cleaned_err, re.DOTALL)
-            
-            if json_match:
-                json_str = json_match.group(1).strip()
-                
-                # 3. Clean up internal escape characters that often break LLM tool calls
-                json_str = json_str.replace("\\n", " ").replace('\\"', '"')
-                
-                # 4. Parse the isolated JSON block
-                data = json.loads(json_str)
-                
-                # Handle cases where it's wrapped in 'arguments' or 'properties'
-                if isinstance(data, dict):
-                    if "arguments" in data:
-                        recovered_profile = data["arguments"]
-                    elif "properties" in data:
-                        recovered_profile = data["properties"]
-                    else:
-                        recovered_profile = data
-                else:
-                    raise ValueError("Extracted JSON is not a dictionary")
+        print(f"⚠️ EXTRACTION NODE FAILURE: {e}")
+        return {"CandidateProfile": {"skills": [], "jobTitle": "Unknown"}}
 
-                print("♻️ RECOVERY SUCCESS: CandidateProfile isolated and parsed.")
-                return {"CandidateProfile": recovered_profile}
-                
-        except Exception as recovery_err:
-            print(f"🚫 RECOVERY FAILED: {recovery_err}")
-
-        print(f"❌ Extraction Node Permanently Failed: {e}")
-        return {"CandidateProfile": {}, "error_message": str(e)}
+    finally:
+        if vector_db is not None:
+            try:
+                vector_db.delete_collection()
+                print("🧹 RAG: Vector database collection cleared.")
+            except Exception as cleanup_err:
+                print(f"⚠️ Cleanup warning: {cleanup_err}")
