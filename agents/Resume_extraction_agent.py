@@ -16,6 +16,11 @@ def clean_llm_json(s):
     return match.group(0) if match else s
 
 def Resume_extaction(state: ElevateMasterState = None):
+
+    if state.get("CandidateProfile") or state.get("extracted_data"):
+        print("⚡ [GUARD] Profile already extracted! Skipping RAG chunking entirely.")
+        return {}
+    
     print("\n=== DEBUGGING NODE STATE & PAYLOADS ===")
     if state is None or not state.get("raw_resume"):
         print("❌ ERROR: No raw_resume text found in state!")

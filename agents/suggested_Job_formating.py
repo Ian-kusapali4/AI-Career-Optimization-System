@@ -29,7 +29,8 @@ def suggested_Job_formating(state: ElevateMasterState):
 
     return {
         "CandidateProfile": profile, 
-        "search_queries": result.model_dump()
+        "search_queries": result.model_dump(),
+        "entry_type": ""
     }
 
 
